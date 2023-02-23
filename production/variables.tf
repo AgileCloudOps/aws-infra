@@ -27,8 +27,33 @@ variable "private_subnet_cidrs" {
 
 }
 
-variable "availability_zones" {
-  type        = list(string)
-  description = "Availability Zones"
-  default     = ["us-east-1a", "us-east-1b", "us-east-1c"]
+variable "ami_owner_id" {
+  type        = string
+  description = "AMI owner ID"
+  default     = "390646828676"
+}
+
+variable "volume_size" {
+  type    = number
+  default = 50
+}
+
+variable "volume_type" {
+  type    = string
+  default = "gp2"
+}
+
+variable "instance_type" {
+  type    = string
+  default = "t2.micro"
+}
+
+variable "ami_name_filter" {
+  type    = string
+  default = "thabes*"
+}
+
+variable "protocol_tcp" {
+  type    = string
+  default = "tcp"
 }
