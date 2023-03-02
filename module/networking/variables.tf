@@ -27,11 +27,6 @@ variable "availability_zones" {
   description = "Availability Zones"
 }
 
-variable "ami_owner_id" {
-  type        = string
-  description = "AMI owner ID"
-  default     = "390646828676"
-}
 
 variable "volume_size" {
   type    = number
@@ -56,4 +51,109 @@ variable "ami_name_filter" {
 variable "protocol_tcp" {
   type    = string
   default = "tcp"
+}
+
+variable "NODE_ENV" {
+  type    = string
+  default = "dev"
+}
+
+variable "PGUSER" {
+  type    = string
+  default = "csye6225"
+}
+
+variable "PGPASSWORD" {
+  type    = string
+  default = "Thabes-neu1"
+}
+
+variable "PGDATABASE" {
+  type    = string
+  default = "csye6225"
+}
+
+variable "PGPORT" {
+  type    = number
+  default = 5432
+}
+
+variable "SERVERPORT" {
+  type    = number
+  default = 8080
+}
+
+variable "DBEngine" {
+  type    = string
+  default = "postgres"
+}
+
+variable "DBInstance" {
+  type    = string
+  default = "db.t3.micro"
+}
+
+variable "StorageRDS" {
+  type    = number
+  default = 20
+}
+
+variable "region" {
+  type    = string
+  default = "us-east-1"
+}
+
+variable "db_para_group_family" {
+  type    = string
+  default = "postgres14"
+}
+
+variable "db_para_group_name" {
+  type    = string
+  default = "postgres-thabes"
+}
+
+variable "is_rds_publicly_accessible" {
+  type    = bool
+  default = false
+}
+
+variable "is_rds_multi_az" {
+  type    = bool
+  default = false
+}
+
+variable "rds_skip_final_snapshot" {
+  type    = bool
+  default = true
+}
+
+variable "ec2_disable_api_termination" {
+  type    = bool
+  default = false
+}
+//
+variable "ami_most_recent" {
+  type    = bool
+  default = true
+}
+
+variable "ec2_associate_public_ip_address" {
+  type    = bool
+  default = true
+}
+
+variable "ec2_delete_on_termination" {
+  type    = bool
+  default = true
+}
+
+variable "s3_force_destroy" {
+  type    = bool
+  default = true
+}
+
+variable "sse_algorithm" {
+  type    = string
+  default = "AES256"
 }
