@@ -33,5 +33,8 @@ module "mynetwork" {
   ec2_delete_on_termination       = var.ec2_delete_on_termination
   s3_force_destroy                = var.s3_force_destroy
   sse_algorithm                   = var.sse_algorithm
+  subdomain_name                  = var.subdomain_name
+  ttl                             = var.ttl
+  alias_www                       = var.alias_www
 }
 

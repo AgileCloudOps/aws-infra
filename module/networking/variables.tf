@@ -157,3 +157,18 @@ variable "sse_algorithm" {
   type    = string
   default = "AES256"
 }
+
+variable "subdomain_name" {
+  type    = string
+  default = "demo.shivamthabe.me"
+}
+
+variable "alias_www" {
+  type    = string
+  default = "www"
+}
+
+variable "ttl" {
+  type    = number
+  default = 60
+}

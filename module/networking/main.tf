@@ -337,3 +337,27 @@ resource "aws_iam_instance_profile" "ec2_s3_instance_profile" {
   name = "aws_iam_role.EC2-CSYE6225"
   role = aws_iam_role.EC2-CSYE6225.name
 }
+
+data "aws_route53_zone" "webApp_zone" {
+  name         = var.subdomain_name
+  private_zone = false
+}
+
+resource "aws_route53_record" "A_record_webApp" {
+  name    = var.subdomain_name
+  type    = "A"
+  zone_id = data.aws_route53_zone.webApp_zone.zone_id
+  ttl     = var.ttl
+  records = [aws_instance.web_server.public_ip]
+}
+resource "aws_route53_record" "www" {
+  zone_id = data.aws_route53_zone.webApp_zone.zone_id
+  name    = var.alias_www
+  type    = "A"
+
+  alias {
+    name                   = aws_route53_record.A_record_webApp.fqdn
+    zone_id                = data.aws_route53_zone.webApp_zone.zone_id
+    evaluate_target_health = true
+  }
+}
