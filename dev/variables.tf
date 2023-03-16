@@ -97,11 +97,6 @@ variable "StorageRDS" {
   default = 20
 }
 
-variable "region" {
-  type    = string
-  default = "us-east-1"
-}
-
 variable "db_para_group_family" {
   type    = string
   default = "postgres14"
@@ -155,4 +150,19 @@ variable "s3_force_destroy" {
 variable "sse_algorithm" {
   type    = string
   default = "AES256"
+}
+
+variable "subdomain_name" {
+  type    = string
+  default = "dev.shivamthabe.me"
+}
+
+variable "alias_www" {
+  type    = string
+  default = "www"
+}
+
+variable "ttl" {
+  type    = number
+  default = 60
 }
