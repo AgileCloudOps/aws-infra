@@ -198,6 +198,8 @@ export PGPORT="${var.PGPORT}"
 export SERVERPORT="${var.SERVERPORT}"
 export AWS_REGION="${var.region}"
 export S3_BUCKETNAME="${aws_s3_bucket.private_bucket.bucket}"
+export STATSD_HOST="${var.STATSD_HOST}"
+export STATSD_PORT="${var.STATSD_PORT}" 
 
 sudo systemctl stop webApp
 
@@ -206,7 +208,6 @@ cd webapp
 NODE_ENV=$NODE_ENV PGUSER=$PGUSER PGHOST=$PGHOST PGPASSWORD=$PGPASSWORD PGDATABASE=$PGDATABASE PGPORT=$PGPORT SERVERPORT=$SERVERPORT AWS_REGION=$AWS_REGION S3_BUCKETNAME=$S3_BUCKETNAME npx sequelize-cli db:migrate
 
 cd ..
-touch egg
 sudo touch nodeEnvVars
 sudo chmod 755 nodeEnvVars
 echo "NODE_ENV="${var.NODE_ENV}"" >> /home/ec2-user/nodeEnvVars
@@ -218,9 +219,12 @@ echo "PGPORT="${var.PGPORT}"" >> /home/ec2-user/nodeEnvVars
 echo "SERVERPORT="${var.SERVERPORT}"" >> /home/ec2-user/nodeEnvVars
 echo "AWS_REGION="${var.region}"" >> /home/ec2-user/nodeEnvVars
 echo "S3_BUCKETNAME="${aws_s3_bucket.private_bucket.bucket}"" >> /home/ec2-user/nodeEnvVars
+echo "STATSD_HOST="${var.STATSD_HOST}"" >> /home/ec2-user/nodeEnvVars
+echo "STATSD_PORT="${var.STATSD_PORT}"" >> /home/ec2-user/nodeEnvVars
 
 sudo systemctl restart webApp
-
+sudo sed -i "s/\"service_address\":\"\"/\"service_address\":\":${var.STATSD_PORT}\"/" /home/ec2-user/webapp/scripts/cloudwatch-config.json
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/home/ec2-user/webapp/scripts/cloudwatch-config.json -s
 
 EOF
   tags = {
@@ -289,27 +293,60 @@ resource "aws_iam_policy" "WebAppS3" {
   name        = "WebAppS3"
   description = "Allows EC2 instances to perform S3 buckets"
 
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject",
-        "s3:ListMultipartUploadParts",
-        "s3:AbortMultipartUpload"
-      ],
-      "Effect": "Allow",
-      "Resource": [
-        "arn:aws:s3:::${aws_s3_bucket.private_bucket.bucket}",
-        "arn:aws:s3:::${aws_s3_bucket.private_bucket.bucket}/*"
-      ]
-    }
-  ]
+  policy = jsonencode({
+
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Action" : [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ],
+        "Effect" : "Allow",
+        "Resource" : [
+          "arn:aws:s3:::${aws_s3_bucket.private_bucket.bucket}",
+          "arn:aws:s3:::${aws_s3_bucket.private_bucket.bucket}/*"
+        ]
+      }
+  ] })
 }
-EOF
+
+resource "aws_iam_policy" "ec2WebAppCloudWatch" {
+  name        = "ec2WebAppCloudWatch"
+  description = "Allows Ec2 instances permission to access CloudWatch"
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "logs:CreateLogStream",
+          "logs:CreateLogGroup",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams",
+          "logs:DescribeLogGroups",
+        ],
+        "Resource" : [
+          "arn:aws:logs:*:*:log-group:csye6225:*",
+        ]
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "cloudwatch:PutMetricData",
+        ],
+        "Resource" : "*"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "ssm:GetParameter"
+        ],
+        "Resource" : "arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role" "EC2-CSYE6225" {
@@ -330,6 +367,11 @@ resource "aws_iam_role" "EC2-CSYE6225" {
 
 resource "aws_iam_role_policy_attachment" "WebAppS3" {
   policy_arn = aws_iam_policy.WebAppS3.arn
+  role       = aws_iam_role.EC2-CSYE6225.name
+}
+
+resource "aws_iam_role_policy_attachment" "ec2WebAppCloudWatch" {
+  policy_arn = aws_iam_policy.ec2WebAppCloudWatch.arn
   role       = aws_iam_role.EC2-CSYE6225.name
 }
 

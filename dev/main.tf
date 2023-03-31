@@ -36,5 +36,7 @@ module "mynetwork" {
   subdomain_name                  = var.subdomain_name
   ttl                             = var.ttl
   alias_www                       = var.alias_www
+  STATSD_PORT                     = var.STATSD_PORT
+  STATSD_HOST                     = var.STATSD_HOST
 }
 
