@@ -166,3 +166,13 @@ variable "ttl" {
   type    = number
   default = 60
 }
+
+variable "STATSD_PORT" {
+  type    = number
+  default = 8125
+}
+
+variable "STATSD_HOST" {
+  type    = string
+  default = "127.0.0.1"
+}
