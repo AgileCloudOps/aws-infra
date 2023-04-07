@@ -38,5 +38,16 @@ module "mynetwork" {
   alias_www                       = var.alias_www
   STATSD_PORT                     = var.STATSD_PORT
   STATSD_HOST                     = var.STATSD_HOST
+  HEALTH_CHECK                    = var.HEALTH_CHECK
+  UPTHRESHOLD                     = var.UPTHRESHOLD
+  DOWNTHRESHOLD                   = var.DOWNTHRESHOLD
+  UPCOMPARISON_OPERATOR           = var.UPCOMPARISON_OPERATOR
+  DOWNCOMPARISON_OPERATOR         = var.DOWNCOMPARISON_OPERATOR
+  EVAL_PERIOD                     = var.EVAL_PERIOD
+  ALARM_METRIC                    = var.ALARM_METRIC
+  ALARM_PERIOD                    = var.ALARM_PERIOD
+  ASG_DESIRED_CAPACITY            = var.ASG_DESIRED_CAPACITY
+  ASG_MAX_SIZE                    = var.ASG_MAX_SIZE
+  ASG_MIN_SIZE                    = var.ASG_MIN_SIZE
 }
 

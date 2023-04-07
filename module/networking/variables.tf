@@ -182,3 +182,70 @@ variable "STATSD_HOST" {
   type    = string
   default = "127.0.0.1"
 }
+
+variable "PORT80" {
+  type    = number
+  default = 80
+}
+
+variable "PORT443" {
+  type    = number
+  default = 443
+}
+
+variable "HEALTH_CHECK" {
+  type    = string
+  default = "/healthz"
+}
+
+variable "UPTHRESHOLD" {
+  type    = string
+  default = "5"
+}
+
+variable "DOWNTHRESHOLD" {
+  type    = string
+  default = "3"
+}
+
+variable "UPCOMPARISON_OPERATOR" {
+  type    = string
+  default = "GreaterThanThreshold"
+}
+
+variable "DOWNCOMPARISON_OPERATOR" {
+  type    = string
+  default = "LessThanThreshold"
+}
+variable "EVAL_PERIOD" {
+  type    = string
+  default = "2"
+}
+variable "ALARM_METRIC" {
+  type    = string
+  default = "CPUUtilization"
+}
+
+variable "ALARM_PERIOD" {
+  type    = string
+  default = "120"
+}
+
+variable "ASG_DESIRED_CAPACITY" {
+  type    = number
+  default = 1
+}
+
+variable "ASG_MAX_SIZE" {
+  type    = number
+  default = 3
+}
+
+variable "ASG_MIN_SIZE" {
+  type    = number
+  default = 1
+}
+variable "ssh_key_name" {
+  type    = string
+  default = "mykey"
+}
