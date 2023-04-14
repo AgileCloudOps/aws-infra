@@ -163,6 +163,8 @@ resource "aws_db_instance" "rds_instance" {
   parameter_group_name   = aws_db_parameter_group.postgres.name
   multi_az               = var.is_rds_publicly_accessible
   skip_final_snapshot    = var.rds_skip_final_snapshot
+  storage_encrypted      = true
+  kms_key_id             = aws_kms_key.rds_key.arn
 }
 
 output "rds_endpoint" {
@@ -434,12 +436,12 @@ resource "aws_security_group" "loadbalancer" {
     Name = "load balancer"
   }
   vpc_id = aws_vpc.main_vpc.id
-  ingress {
-    from_port   = var.PORT80
-    to_port     = var.PORT80
-    protocol    = var.protocol_tcp
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # ingress {
+  #   from_port   = var.PORT80
+  #   to_port     = var.PORT80
+  #   protocol    = var.protocol_tcp
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
 
   ingress {
     from_port   = var.PORT443
@@ -466,13 +468,15 @@ resource "aws_launch_template" "asg_launch_config" {
   name          = "asg_launch_config"
   image_id      = data.aws_ami.latest_ami.id
   instance_type = var.instance_type
-  key_name = var.ssh_key_name
+  key_name      = var.ssh_key_name
   block_device_mappings {
     device_name = "/dev/xvda"
     ebs {
       volume_size           = var.volume_size
       volume_type           = var.volume_type
       delete_on_termination = var.ec2_delete_on_termination
+      encrypted             = true
+      kms_key_id            = aws_kms_key.ebs_key.arn
     }
   }
   disable_api_termination = var.ec2_disable_api_termination
@@ -640,13 +644,150 @@ resource "aws_lb_target_group" "alb_tg" {
 
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener
 
+# resource "aws_lb_listener" "front_end" {
+#   load_balancer_arn = aws_lb.lb.arn
+#   port              = var.PORT80
+#   protocol          = "HTTP"
+#   default_action {
+#     type             = "forward"
+#     target_group_arn = aws_lb_target_group.alb_tg.arn
+#   }
+
+# }
+
+//Demo HTTPS configuration
+data "aws_acm_certificate" "issued" {
+  domain   = var.subdomain_name
+  statuses = ["ISSUED"]
+}
+
 resource "aws_lb_listener" "front_end" {
   load_balancer_arn = aws_lb.lb.arn
-  port              = var.PORT80
-  protocol          = "HTTP"
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = data.aws_acm_certificate.issued.arn
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.alb_tg.arn
   }
+}
 
+resource "aws_kms_key" "ebs_key" {
+  tags = {
+    Environment = "Demo"
+    Name        = "ebs-key"
+  }
+  description             = "ebs-key"
+  deletion_window_in_days = 10
+}
+
+resource "aws_kms_key" "rds_key" {
+  tags = {
+    Environment = "Demo"
+    Name        = "rds-key"
+  }
+  description             = "rds-key"
+  deletion_window_in_days = 10
+}
+data "aws_caller_identity" "current" {}
+resource "aws_kms_key_policy" "ebs_kms_policy" {
+  key_id = aws_kms_key.ebs_key.key_id
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "Allow access for Key Administrators",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : "${data.aws_caller_identity.current.arn}"
+        },
+        "Action" : [
+          "kms:Create*",
+          "kms:Describe*",
+          "kms:Enable*",
+          "kms:List*",
+          "kms:Put*",
+          "kms:Update*",
+          "kms:Revoke*",
+          "kms:Disable*",
+          "kms:Get*",
+          "kms:Delete*",
+          "kms:TagResource",
+          "kms:UntagResource",
+          "kms:ScheduleKeyDeletion",
+          "kms:CancelKeyDeletion"
+        ],
+        "Resource" : [aws_kms_key.ebs_key.arn]
+      },
+      {
+        "Sid" : "Allow service-linked role use of the customer managed key",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : [
+            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
+          ]
+        },
+        "Action" : [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ],
+        "Resource" : [aws_kms_key.ebs_key.arn]
+      },
+      {
+        "Sid" : "Allow attachment of persistent resources",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : [
+            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
+          ]
+        },
+        "Action" : [
+          "kms:CreateGrant"
+        ],
+        "Resource" : [aws_kms_key.ebs_key.arn],
+        "Condition" : {
+          "Bool" : {
+            "kms:GrantIsForAWSResource" : true
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_kms_key_policy" "rds_kms_policy" {
+  key_id = aws_kms_key.rds_key.key_id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        "Sid" : "Allow access for Key Administrators",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : "${data.aws_caller_identity.current.arn}"
+        },
+        "Action" : [
+          "kms:Create*",
+          "kms:Describe*",
+          "kms:Enable*",
+          "kms:List*",
+          "kms:Put*",
+          "kms:Update*",
+          "kms:Revoke*",
+          "kms:Disable*",
+          "kms:Get*",
+          "kms:Delete*",
+          "kms:TagResource",
+          "kms:UntagResource",
+          "kms:ScheduleKeyDeletion",
+          "kms:CancelKeyDeletion"
+        ],
+        "Resource" : [aws_kms_key.rds_key.arn]
+      }
+    ]
+  })
 }

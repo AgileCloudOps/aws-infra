@@ -52,7 +52,7 @@ This is an Infrastructure as a code project with terraform which created resourc
    ```
     terraform destroy
    ```
-## File to modify variables
-    ```
-    Rename 'dev.tfvars.template' to 'dev.tfvars' 
-    ```
+## Command to import SSL Certificate
+   ```
+   aws acm import-certificate --certificate fileb://{path to certificate} --certificate-chain fileb://{path to certificate chain} --private-key fileb://{path to certificate private key}  --profile {profile name}
+   ```
